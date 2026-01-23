@@ -1,11 +1,27 @@
 import React from "react";
 import { KeyboardAvoidingView, Platform,View, StyleSheet } from "react-native";
-import { Button, Text,TextInput } from "react-native-paper";
+import { Button, Text,TextInput,useTheme } from "react-native-paper";
 export default function AuthScreen(){
     const [isSignUp,setIsSignUp] = React.useState<boolean>(true);
+    const [email,setEmail] = React.useState<string>('');
+    const [password,setPassword] = React.useState<string>('');
+    const [error,setError] = React.useState<string>('');
+    
+    const theme = useTheme();
 
     const handleAuth = async () => {
         // handle sign in or sign up logic here
+        if (!email || !password) {
+            //alert("Please enter email and password");
+            setError("Please enter email and password.");
+            return;
+        }
+        if (password.length < 6) {
+            setError("Password must be at least 6 characters long.");
+            return;
+        }
+
+        setError('');
     };
 
     const handleSwitchMode = () => {
@@ -25,6 +41,7 @@ export default function AuthScreen(){
                   placeholder="bekishet@gmail.com"
                   keyboardType="email-address"
                   mode="outlined"
+                  onChangeText={setEmail}
                     />
                 
                 <TextInput 
@@ -33,7 +50,10 @@ export default function AuthScreen(){
                   autoCapitalize="none"
                   keyboardType="email-address"
                   mode="outlined"
+                  onChangeText={setPassword}
                 />
+
+                {error ? <Text style={{color: theme.colors.error}}>{error}</Text> : null}
 
                 <Button mode="contained" style={styles.button} onPress={handleAuth}>
                     {isSignUp ? "Sign Up":"Sign In"}</Button>
@@ -69,5 +89,5 @@ const styles = StyleSheet.create({
     },
     switchModeText:{
         marginTop:15,
-    }
+    },
 })
