@@ -1,10 +1,18 @@
 import { Text, View,StyleSheet } from "react-native";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
+import { Button } from "react-native-paper";
+import { useAuth } from "@/lib/auth-context";
+
+const go = () => {
+  router.push("/auth");
+}
 
 export default function Index() {
+  const {signOut} = useAuth();
   return (
     <View style={styles.view}>
       <Text>This is home page</Text>
+      <Button onPress={signOut} icon="logout">Sign Out</Button>
     </View>
   );
 }
