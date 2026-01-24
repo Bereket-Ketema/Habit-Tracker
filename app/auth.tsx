@@ -1,3 +1,5 @@
+import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "expo-router";
 import React from "react";
 import { KeyboardAvoidingView, Platform,View, StyleSheet } from "react-native";
 import { Button, Text,TextInput,useTheme } from "react-native-paper";
@@ -8,6 +10,9 @@ export default function AuthScreen(){
     const [error,setError] = React.useState<string>('');
     
     const theme = useTheme();
+    const router = useRouter();
+
+    const {signIn, signUp} = useAuth();
 
     const handleAuth = async () => {
         // handle sign in or sign up logic here
@@ -21,7 +26,23 @@ export default function AuthScreen(){
             return;
         }
 
-        setError('');
+        setError('Wrong credentials. Please try again.');
+
+        if (isSignUp) {
+            const error = await signUp(email, password);
+            if (error) {
+                setError(error);
+            }
+        } else {
+            const error = await signIn(email, password);
+            if (error) {
+                //setError(error);
+                setError('Wrong credentials. Please try again.');
+            }
+            else{
+                router.replace("/");
+            }
+        }
     };
 
     const handleSwitchMode = () => {
@@ -48,8 +69,8 @@ export default function AuthScreen(){
                   style={styles.input}
                   label="password"
                   autoCapitalize="none"
-                  keyboardType="email-address"
                   mode="outlined"
+                  secureTextEntry
                   onChangeText={setPassword}
                 />
 
