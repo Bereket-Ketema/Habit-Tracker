@@ -26,7 +26,7 @@ export default function AuthScreen(){
             return;
         }
 
-        setError('Wrong credentials. Please try again.');
+        //setError('Wrong credentials. Please try again.');
 
         if (isSignUp) {
             const error = await signUp(email, password);
@@ -36,8 +36,8 @@ export default function AuthScreen(){
         } else {
             const error = await signIn(email, password);
             if (error) {
-                //setError(error);
-                setError('Wrong credentials. Please try again.');
+                setError(error);
+                //setError('Wrong credentials. Please try again.');
             }
             else{
                 router.replace("/");
