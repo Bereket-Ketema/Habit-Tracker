@@ -49,21 +49,28 @@ export default function AuthProvider({children}: {children: React.ReactNode}) {
     };
 
     const signIn = async (email: string, password: string) => {
-        // implement sign up logic
-        try{
-            await account.createEmailPasswordSession(email, password);
-            const session =  await account.get();
-            setUser(session);
-            return null;// no error if we return null   
+    try {
+        // 👇 kill any existing session first
+        try {
+            await account.deleteSession("current");
+        } catch (e) {
+            // ignore if no session exists
         }
-        catch (error) {
-            if (error instanceof Error) {
-                return error.message;
-            }
 
-            return "An unknown error occurred during sign in.";
+        // 👇 now create new session
+        await account.createEmailPasswordSession(email, password);
+        const session = await account.get();
+        setUser(session);
+
+        return null;
+    } catch (error) {
+        if (error instanceof Error) {
+            return error.message;
         }
-    };
+        return "An unknown error occurred during sign in.";
+    }
+};
+
 
     const signOut = async () => {
         try {
