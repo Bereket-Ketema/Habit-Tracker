@@ -23,9 +23,9 @@ export default function Index() {
   const swipeableRefs = useRef<{ [key: string]: Swipeable | null }>({});
   useEffect(() => {
     if (user) {
-      const channel = `databases.${DATABASE_ID}.collections.${HABITSCOLLECTION_ID}.documents`;
+      const habitsChannel = `databases.${DATABASE_ID}.collections.${HABITSCOLLECTION_ID}.documents`;
       const habitsSubscription = client.subscribe(
-        channel,
+        habitsChannel,
         (response: RealtimeResponse) => {
           if (
             response.events.includes(
@@ -49,10 +49,25 @@ export default function Index() {
         },
       );
 
+      const completionsChannel = `databases.${DATABASE_ID}.collections.${HABITSCOMPLETIONS_ID}.documents`;
+      const completionsSubscription = client.subscribe(
+        completionsChannel,
+        (response: RealtimeResponse) => {
+          if (
+            response.events.includes(
+              "databases.*.collections.*.documents.*.create",
+            )
+          ) {
+            fetchTodayCompletions();
+          } 
+        },
+      );
+
       fetchHabits();
       fetchTodayCompletions();
       return () => {
         habitsSubscription();
+        completionsSubscription();
       };
     }
   }, [user]);
@@ -140,14 +155,18 @@ export default function Index() {
     );
   };
 
-  const renderRightActions = () => {
+  const isHabitCompleted = (habitId: string)=>completedHabit?.includes(habitId);
+
+  const renderRightActions = (habitId: string) => {
     return (
       <View style={styles.swipeActionRight}>
+        { isHabitCompleted(habitId) ? (<Text style={{color:"#fff"}}>Completed!</Text>
+        ) :(
         <MaterialCommunityIcons
           name="check-circle-outline"
           size={32}
           color="#fff"
-        />
+        />)}
       </View>
     );
   };
@@ -179,7 +198,7 @@ export default function Index() {
               overshootLeft={false}
               overshootRight={false}
               renderLeftActions={renderLeftActions}
-              renderRightActions={renderRightActions}
+              renderRightActions={()=>renderRightActions(habit.$id)}
               onSwipeableOpen={(direction) => {
                 if (direction === "left") {
                   handleDeleteHabit(habit.$id);
@@ -190,7 +209,7 @@ export default function Index() {
                 swipeableRefs.current[habit.$id]?.close();
               }}
             >
-              <Surface style={styles.card}>
+              <Surface style={[styles.card, isHabitCompleted(habit.$id) && styles.cardCompleted,]}>
                 <View style={styles.cardContent}>
                   <Text style={styles.cardTitle}>{habit.title}</Text>
                   <Text style={styles.cardDescription}>
@@ -248,6 +267,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
+  },
+  cardCompleted: {
+    opacity:0.6
   },
   cardContent: {
     padding: 20,
