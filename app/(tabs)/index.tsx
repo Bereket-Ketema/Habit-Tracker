@@ -8,9 +8,6 @@ import React, { useEffect } from "react";
 import { Habit } from "@/types/database.type";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-const go = () => {
-  router.push("/auth");
-}
 
 export default function Index() {
   const {signOut,user} = useAuth();
@@ -18,7 +15,7 @@ export default function Index() {
 
   useEffect(()=>{
     if(user){
-    const channel = `databases.${DATABASE_ID}.collections${HABITSCOLLECTION_ID}.documents`;
+    const channel = `databases.${DATABASE_ID}.collections.${HABITSCOLLECTION_ID}.documents`;
     const habitsSubscription = client.subscribe(
       channel,
     (response: RealtimeResponse)=>{
@@ -67,7 +64,7 @@ export default function Index() {
             <Text style={styles.emptyStateText} >No Habits yet. Add your firts Habit!</Text>
           </View>
         ):(habits?.map((habit,key)=>(
-          <Surface style={styles.card} >
+          <Surface key={habit.$id} style={styles.card} >
           <View style={styles.cardContent} >
             
               <Text style={styles.cardTitle} >{habit.title}</Text>
