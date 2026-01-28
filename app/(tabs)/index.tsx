@@ -2,17 +2,18 @@ import {  View,StyleSheet, ScrollView } from "react-native";
 import { Link, router } from "expo-router";
 import { Button,Surface,Text } from "react-native-paper";
 import { useAuth } from "@/lib/auth-context";
-import { client, DATABASE_ID, databases, HABITSCOLLECTION_ID, RealtimeResponse } from "@/lib/appwrite";
-import { Query } from "react-native-appwrite";
-import React, { useEffect } from "react";
+import { client, DATABASE_ID, databases, HABITSCOLLECTION_ID, HABITSCOMPLETIONS_ID, RealtimeResponse } from "@/lib/appwrite";
+import { ID, Query } from "react-native-appwrite";
+import React, { useEffect, useRef } from "react";
 import { Habit } from "@/types/database.type";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-
+import { Swipeable } from "react-native-gesture-handler";
 
 export default function Index() {
   const {signOut,user} = useAuth();
   const [habits,setHabits] = React.useState<Habit[]>();
 
+  const swipeableRefs = useRef<{[key:string]: Swipeable | null}>({});
   useEffect(()=>{
     if(user){
     const channel = `databases.${DATABASE_ID}.collections.${HABITSCOLLECTION_ID}.documents`;
@@ -51,6 +52,65 @@ export default function Index() {
       console.log(error);
     }
   }
+
+  const handleDeleteHabit = async (id:string) =>{
+    try{
+      const response = await databases.deleteDocument(
+        DATABASE_ID,
+        HABITSCOLLECTION_ID,
+        id
+      );
+      console.log(response);
+    }catch(error){
+      console.log(error);
+    }
+  }
+
+  const handleCompleteHabit = async (id:string) =>{
+    if (!user) return;
+    try{
+      const currentDate = new Date().toISOString();
+      const response = await databases.createDocument(
+        DATABASE_ID,
+        HABITSCOMPLETIONS_ID,
+        ID.unique(),
+        {
+          habit_id: id,
+          user_id: user.$id,
+          completed_at: currentDate,
+        }
+      );
+      const habit = habits?.find((h)=>h.$id === id);
+      if (!habit) return;
+        await databases.updateDocument(
+          DATABASE_ID,
+          HABITSCOLLECTION_ID,
+          id,
+          {
+            streak_count: habit.streak_count + 1,
+            last_completed: currentDate,
+          }
+        );
+    }catch(error){
+      console.log(error);
+    }
+  }
+
+  const renderLeftActions = ()=>{
+    return(
+      <View style={styles.swipeActionLeft}>
+        <MaterialCommunityIcons name="trash-can-outline" size={32} color="#ffffff" />
+      </View>
+    );
+  };
+
+  const renderRightActions = ()=>{
+    return(
+      <View style={styles.swipeActionRight}>
+        <MaterialCommunityIcons name="check-circle-outline" size={32} color="#fff" />
+      </View>
+    );
+  };
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -64,7 +124,25 @@ export default function Index() {
             <Text style={styles.emptyStateText} >No Habits yet. Add your firts Habit!</Text>
           </View>
         ):(habits?.map((habit,key)=>(
-          <Surface key={habit.$id} style={styles.card} >
+          <Swipeable ref={(ref)=>{
+            swipeableRefs.current[habit.$id] = ref
+          }}
+          key = {key}
+          overshootLeft = {false}
+          overshootRight = {false}
+          renderLeftActions={renderLeftActions}
+          renderRightActions={renderRightActions}
+          onSwipeableOpen={(direction)=>{
+            if (direction === "left"){
+              handleDeleteHabit(habit.$id);
+            }else if(direction === "right"){
+              handleCompleteHabit(habit.$id);
+            }
+
+          swipeableRefs.current[habit.$id]?.close();
+          }}        
+          >
+          <Surface style={styles.card} >
           <View style={styles.cardContent} >
             
               <Text style={styles.cardTitle} >{habit.title}</Text>
@@ -80,6 +158,7 @@ export default function Index() {
               </View>
           </View>
         </Surface>
+        </Swipeable>
         )))}
       </ScrollView>
     </View>
@@ -164,6 +243,26 @@ const styles = StyleSheet.create({
   },
   emptyStateText:{
     color: "#666666",
+  },
+  swipeActionLeft:{
+    justifyContent: "center",
+    alignItems: "flex-start",
+    flex:1,
+    backgroundColor: "#e53935",
+    borderRadius: 18,
+    marginBottom: 18,
+    marginTop:2,
+    paddingLeft:16
+  },
+  swipeActionRight:{
+    justifyContent: "center",
+    alignItems: "flex-end",
+    flex:1,
+    backgroundColor: "#4caf50",
+    borderRadius: 18,
+    marginBottom: 18,
+    marginTop:2,
+    paddingRight:16
   },
 
 
